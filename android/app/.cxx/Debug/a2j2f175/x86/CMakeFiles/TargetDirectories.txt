@@ -1,0 +1,2 @@
+C:/Users/Vishnu/Desktop/mini_project/android/app/.cxx/Debug/a2j2f175/x86/CMakeFiles/edit_cache.dir
+C:/Users/Vishnu/Desktop/mini_project/android/app/.cxx/Debug/a2j2f175/x86/CMakeFiles/rebuild_cache.dir
