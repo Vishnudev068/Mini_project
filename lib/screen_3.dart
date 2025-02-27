@@ -24,7 +24,7 @@ class _ScanPageState extends State<ScanPage> {
             actions: [
               ElevatedButton(
                 onPressed: () {
-                  firestore.addNote(textController.text);
+                  // firestore.addNote(textController.text);
 
                   textController.clear();
                   Navigator.pop(context);
