@@ -5,7 +5,9 @@ import 'package:flutter_application_4/offline_page.dart';
 import 'package:flutter_application_4/token_generat.dart';
 
 class DoctorInfo extends StatefulWidget {
-  const DoctorInfo({super.key});
+  final Map<String, dynamic> doctorData;
+
+  const DoctorInfo({super.key, required this.doctorData});
 
   @override
   State<DoctorInfo> createState() => _DoctorInfoState();
@@ -13,6 +15,10 @@ class DoctorInfo extends StatefulWidget {
 
 class _DoctorInfoState extends State<DoctorInfo> {
   bool _isRed = false;
+  String capitalizeFirst(String text) {
+    if (text.isEmpty) return text;
+    return text[0].toUpperCase() + text.substring(1);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,9 +33,9 @@ class _DoctorInfoState extends State<DoctorInfo> {
                   child: Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: Theme.of(context).brightness==Brightness.dark
-                      ? Color.fromARGB(255,74,85,113)
-                      :Colors.grey,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Color.fromARGB(255, 74, 85, 113)
+                          : Colors.grey,
                       borderRadius: BorderRadius.only(
                         bottomLeft: Radius.circular(20),
                         bottomRight: Radius.circular(20),
@@ -107,7 +113,7 @@ class _DoctorInfoState extends State<DoctorInfo> {
                   Padding(
                     padding: const EdgeInsets.only(top: 30, left: 28),
                     child: Text(
-                      "Dr Libin C Panicker",
+                      "Dr ${capitalizeFirst(widget.doctorData['name'] ?? 'Unknown')}",
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -117,7 +123,7 @@ class _DoctorInfoState extends State<DoctorInfo> {
                   Padding(
                     padding: const EdgeInsets.only(top: 64, left: 28),
                     child: Text(
-                      "Surgeon",
+                      capitalizeFirst(widget.doctorData['department']),
                       style: TextStyle(
                         fontSize: 18,
                       ),
@@ -181,7 +187,8 @@ class _DoctorInfoState extends State<DoctorInfo> {
                         color: Colors.blue,
                       ),
                       Expanded(
-                        child: _buildInfoColumn("Rating", "4.6"),
+                        child: _buildInfoColumn(
+                            "Rating","${widget.doctorData['rating']}"),
                       ),
                     ],
                   ),
@@ -221,7 +228,7 @@ class _DoctorInfoState extends State<DoctorInfo> {
         ],
       ),
       bottomNavigationBar: BottomAppBar(
-        color:  Theme.of(context).navigationBarTheme.backgroundColor,
+        color: Theme.of(context).navigationBarTheme.backgroundColor,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
