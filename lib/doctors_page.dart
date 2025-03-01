@@ -18,6 +18,11 @@ class _DoctorsPageState extends State<DoctorsPage> {
   final FirestoreServices _firestore = FirestoreServices();
   FocusNode _focus = FocusNode();
   bool _isFocus = false;
+  String capitalizeFirst(String text) {
+    if (text.isEmpty) return text;
+    return text[0].toUpperCase() + text.substring(1);
+  }
+
   Map<int, bool> expandedItems = {};
   final Map<int, ValueNotifier<bool>> _favoriteNotifiers = {};
 
@@ -61,7 +66,7 @@ class _DoctorsPageState extends State<DoctorsPage> {
                     TextField(
                       onChanged: (value) {
                         setState(() {
-                          searchQuery = value;
+                         searchQuery = value.trim().toLowerCase();
                         });
                       },
                       focusNode: _focus,
@@ -105,20 +110,18 @@ class _DoctorsPageState extends State<DoctorsPage> {
           Expanded(
             child: searchQuery.isEmpty
                 ? Center(child: Text("Type to search..."))
-                : StreamBuilder<QuerySnapshot>(
+                : StreamBuilder<List<QueryDocumentSnapshot>>(
+                   
                     stream: _firestore.getList(searchQuery),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return Center(
-                          child: CircularProgressIndicator(),
-                        );
+                        return Center(child: CircularProgressIndicator());
                       }
-                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                        return Center(
-                          child: Text("No results found"),
-                        );
+                      if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                        return Center(child: Text("No results found"));
                       }
-                      var docs = snapshot.data!.docs;
+
+                      var docs = snapshot.data!;
                       return ListView.separated(
                         padding: EdgeInsets.zero,
                         itemBuilder: (context, index) {
@@ -222,7 +225,7 @@ class _DoctorsPageState extends State<DoctorsPage> {
                                         Icon(Icons.star, color: Colors.amber),
                                         SizedBox(width: 4),
                                         Text(
-                                          "4.6",
+                                          "${data['rating']}",
                                           style: TextStyle(
                                             fontSize: 18,
                                           ),
@@ -276,14 +279,27 @@ class _DoctorsPageState extends State<DoctorsPage> {
                                     right: 25,
                                     bottom: 16,
                                     child: ElevatedButton(
-                                      onPressed: () {
-                                        Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                            builder: (BuildContext context) {
-                                              return DoctorInfo();
-                                            },
-                                          ),
-                                        );
+                                      onPressed: () async {
+                                        String doctorId = data['id'];
+                                        Map<String, dynamic>? doctorData =
+                                            await _firestore
+                                                .fetchDoctorData(doctorId);
+
+                                        if (doctorData != null) {
+                                          Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                              builder: (context) => DoctorInfo(
+                                                  doctorData: doctorData),
+                                            ),
+                                          );
+                                        } else {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            SnackBar(
+                                                content:
+                                                    Text("Doctor not found!")),
+                                          );
+                                        }
                                       },
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor:

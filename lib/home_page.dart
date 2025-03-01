@@ -7,6 +7,7 @@ import 'package:flutter_application_4/doctors_page.dart';
 import 'package:flutter_application_4/pharmacy_page.dart';
 import 'package:flutter_application_4/profile_page.dart';
 import 'package:flutter_application_4/screen_3.dart';
+import 'package:flutter_application_4/services/firestore.dart';
 import 'package:flutter_application_4/settings.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -18,6 +19,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  final FirestoreServices _firestore = FirestoreServices();
   int _selectedIndex = 0;
   FocusNode _focus = FocusNode();
   bool _isfocus = false;
@@ -1319,11 +1321,15 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void showDept(_dept) {
+  void showDept(_dept) async {
+    List<Map<String, dynamic>> topDoctors = await _firestore.searchDept(_dept);
+
+    print(topDoctors);
+
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => DepartDoc(dept: _dept),
+        builder: (context) => DepartDoc(dept: _dept, topDoctors: topDoctors),
       ),
     );
   }
