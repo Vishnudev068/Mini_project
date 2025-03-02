@@ -62,7 +62,7 @@ class _splashscreenState extends State<splashscreen>
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (ctx) {
-              return LoginPage();
+              return Loginpage();
             },
           ),
         );

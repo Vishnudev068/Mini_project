@@ -1,36 +1,45 @@
 import 'dart:developer';
-
-import 'package:flutter/material.dart';
-import 'package:flutter_application_4/auth_service.dart';
 import 'package:flutter_application_4/home_page.dart';
-import 'package:flutter_application_4/sign-up.dart';
 
-class Loginpage extends StatefulWidget {
-  const Loginpage({super.key});
+import 'auth_service.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_application_4/login.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+class signup extends StatefulWidget {
+  const signup({super.key});
 
   @override
-  State<Loginpage> createState() => _LoginpageState();
+  State<signup> createState() => _signupState();
 }
 
-class _LoginpageState extends State<Loginpage> {
-  final _auth =AuthService();
-  final TextEditingController _email = TextEditingController();
-  final TextEditingController _password= TextEditingController();
-  void dispose() {
+class _signupState extends State<signup> {
+  final _auth=AuthService();
+  final TextEditingController _email=TextEditingController();   
+  final TextEditingController _password=TextEditingController();   
+  final TextEditingController _username=TextEditingController();   
+  void dispose(){
     _email.dispose();
     _password.dispose();
+    _username.dispose();
     super.dispose();
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('login'),
+        title: Text('sign'),
         backgroundColor: Colors.blue,
       ),
       body: SafeArea(
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+           Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: _username,
+              decoration: InputDecoration(
+                  hintText: 'username', border: OutlineInputBorder()),
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: TextField(
@@ -49,35 +58,37 @@ class _LoginpageState extends State<Loginpage> {
           ),
           ElevatedButton(
             onPressed: () {
-            _login();
+              
+              _signup();
             },
-            child: Text('login'),
+            child: Text('sign-up'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
             ),
           ),
-          Text('already have an account'),
+          Text('login'),
           TextButton(onPressed: () {
             Navigator.of(context).push(MaterialPageRoute(builder: (context){
-              return signup();
+              return Loginpage();
             }));
-          }, child: Text('sign-up'))
+          }, child: Text('login page'))
         ]),
       ),
     );
   }
-   goToHome(BuildContext context){
+  goToHome(BuildContext context){
     Navigator.of(context).push(MaterialPageRoute(builder: (BuildContext){
       return HomePage();
     }));
   }
-   _login() async {
+  _signup() async {
+    
     final user =
-        await _auth.loginUserWithEmailAndPassword(_email.text, _password.text);
-
+        await _auth.createUserWithEmailAndPassword(_email.text, _password.text);
     if (user != null) {
-      log("User Logged In");
+      log("User Created Succesfully");
       goToHome(context);
     }
-  }
+ }
 }
+ 
