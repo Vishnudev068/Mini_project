@@ -44,7 +44,7 @@ class SettingsPage extends StatelessWidget {
 
     Navigator.of(ctx).pushAndRemoveUntil(
         MaterialPageRoute(
-          builder: (context) => LoginPage(),
+          builder: (context) => Loginpage(),
         ),
         (route) => false);
   }

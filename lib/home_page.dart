@@ -4,28 +4,32 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_4/depart_doc.dart';
 import 'package:flutter_application_4/doctors_page.dart';
+
 import 'package:flutter_application_4/pharmacy_page.dart';
 import 'package:flutter_application_4/profile_page.dart';
 import 'package:flutter_application_4/screen_3.dart';
 import 'package:flutter_application_4/services/firestore.dart';
+import 'package:flutter_application_4/services/location_services.dart';
 import 'package:flutter_application_4/settings.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class HomePage extends StatefulWidget {
-  HomePage({super.key});
+  const HomePage({super.key});
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
+  String _locationName = "Kottathala";
+  String _locationDetails = "Kottarakkara, Kollam, Kerala";
   final FirestoreServices _firestore = FirestoreServices();
   int _selectedIndex = 0;
   FocusNode _focus = FocusNode();
   bool _isfocus = false;
 
   final List<String> departments = [
-    "Physician",
+    "General Medicine",
     "Cardiology",
     "Neurology",
     "Orthopedics",
@@ -35,7 +39,7 @@ class _HomePageState extends State<HomePage> {
     "Pulmonology",
     "Endocrinology",
     "Pediatrics",
-    "Gynecology & Obstetrics",
+    "Gynecology",
     "Dermatology",
     "Ophthalmology",
     "Urology",
@@ -109,37 +113,42 @@ class _HomePageState extends State<HomePage> {
                   Positioned(
                     top: 40,
                     left: 35,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            FaIcon(
-                              FontAwesomeIcons.locationCrosshairs,
-                              color: Colors.white,
-                              size: 24,
-                            ),
-                            SizedBox(width: 5),
-                            Text(
-                              "Kottathala",
-                              style: TextStyle(
+                    child: InkWell(
+                      onTap: () {
+                        _showLocationDropdown(context);
+                      },
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              FaIcon(
+                                FontAwesomeIcons.locationCrosshairs,
                                 color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
+                                size: 24,
                               ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          "Kottarakkara, Kollam, Kerala",
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 14,
+                              SizedBox(width: 5),
+                              Text(
+                                _locationName,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
+                          SizedBox(height: 2),
+                          Text(
+                            _locationDetails,
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   Positioned(
@@ -606,7 +615,7 @@ class _HomePageState extends State<HomePage> {
                                         ),
                                         child: GestureDetector(
                                           onTap: () {
-                                            final _dept = "Physician";
+                                            final _dept = "General Medicine";
                                             showDept(_dept);
                                           },
                                           child: Container(
@@ -1324,13 +1333,44 @@ class _HomePageState extends State<HomePage> {
   void showDept(_dept) async {
     List<Map<String, dynamic>> topDoctors = await _firestore.searchDept(_dept);
 
-    print(topDoctors);
-
     Navigator.push(
+      // ignore: use_build_context_synchronously
       context,
       MaterialPageRoute(
         builder: (context) => DepartDoc(dept: _dept, topDoctors: topDoctors),
       ),
     );
+  }
+
+  void _showLocationDropdown(BuildContext context) {
+    showMenu(
+      context: context,
+      position: RelativeRect.fromLTRB(10, 80, 0, 0),
+      items: [
+        PopupMenuItem<String>(
+          child: ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _fetchLocation();
+            },
+            child: Text("Get Current Location"),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Fetches current location and updates UI
+  Future<void> _fetchLocation() async {
+    try {
+      var locationData = await LocationService.getLatLong();
+      setState(() {
+        _locationName =
+            locationData["locality"] ?? "Unknown"; // Corrected locality usage
+        _locationDetails = locationData["address"] ?? "Location not found";
+      });
+    } catch (e) {
+      print("Error fetching location: $e");
+    }
   }
 }

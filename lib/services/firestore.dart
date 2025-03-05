@@ -16,8 +16,8 @@ class FirestoreServices {
 
     var departmentQuery = firestore
         .collection('doctors')
-        .where('department', isGreaterThanOrEqualTo: prefix)
-        .where('department', isLessThan: prefix + '\uf8ff')
+        .where('speciality', isGreaterThanOrEqualTo: prefix)
+        .where('speciality', isLessThan: prefix + '\uf8ff')
         .snapshots();
 
     return nameQuery.asyncMap(
@@ -45,7 +45,7 @@ class FirestoreServices {
     try {
       QuerySnapshot querySnapshot = await FirebaseFirestore.instance
           .collection('doctors')
-          .where("id", isEqualTo: doctorId)
+          .where("doctorId", isEqualTo: doctorId)
           .limit(1)
           .get();
 
@@ -65,9 +65,9 @@ class FirestoreServices {
       dept = dept.trim().toLowerCase();
       QuerySnapshot querySnapshot = await firestore
           .collection('doctors')
-          .where('department', isEqualTo: dept)
-          .orderBy('rating',descending: true)
-          .limit(10)
+          .where('speciality', isEqualTo: dept)
+          .orderBy('rating', descending: true)
+          .limit(3)
           .get();
 
       return querySnapshot.docs
@@ -80,9 +80,11 @@ class FirestoreServices {
   }
 
   Stream<QuerySnapshot> getDeptDoc(String dept, String prefix) {
+    dept = dept.trim().toLowerCase();
+
     return firestore
         .collection('doctors')
-        .where('department', isEqualTo: dept)
+        .where('speciality', isEqualTo: dept)
         .where('name', isGreaterThanOrEqualTo: prefix)
         .where('name', isLessThanOrEqualTo: '$prefix\uf8ff')
         .snapshots();

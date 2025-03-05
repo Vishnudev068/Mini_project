@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_4/doctor_info.dart';
 import 'package:flutter_application_4/services/firestore.dart';
+import 'package:intl/intl.dart';
 
 class DepartDoc extends StatefulWidget {
   final String dept;
@@ -18,7 +19,8 @@ class _DepartDocState extends State<DepartDoc> {
   final Map<int, ValueNotifier<bool>> _favoriteNotifiers = {};
 
   final Map<String, String> departmentDetails = {
-    "Physician": "General medical care, diagnosis, and treatment of illnesses.",
+    "General Medicine":
+        "General medical care, diagnosis, and treatment of illnesses.",
     "Cardiology": "Heart-related diseases, diagnosis, and treatment.",
     "Neurology": "Brain, spinal cord, and nervous system disorders.",
     "Orthopedics": "Bone, joint, and muscle disorders and surgeries.",
@@ -28,7 +30,7 @@ class _DepartDocState extends State<DepartDoc> {
     "Pulmonology": "Lung and respiratory system disorders.",
     "Endocrinology": "Hormonal imbalances and gland disorders.",
     "Pediatrics": "Medical care for infants, children, and adolescents.",
-    "Gynecology & Obstetrics": "Women's reproductive health and childbirth.",
+    "Gynecology": "Women's reproductive health and childbirth.",
     "Dermatology": "Skin, hair, and nail disorders and treatments.",
     "Ophthalmology": "Eye disorders, surgeries, and vision correction.",
     "Urology": "Urinary tract and male reproductive system diseases.",
@@ -45,6 +47,7 @@ class _DepartDocState extends State<DepartDoc> {
 
   @override
   Widget build(BuildContext context) {
+    String formattedDate = DateFormat('EEEE, d MMMM y').format(DateTime.now());
     String deptDetails =
         departmentDetails[widget.dept] ?? "No details available";
 
@@ -177,7 +180,9 @@ class _DepartDocState extends State<DepartDoc> {
                         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                           return Center(child: Text("No doctors found"));
                         }
+                        
                         var docs = snapshot.data!.docs;
+                        
                         return ListView.separated(
                           padding: EdgeInsets.zero,
                           itemBuilder: (context, index) {
@@ -258,7 +263,7 @@ class _DepartDocState extends State<DepartDoc> {
                                                       color: Colors.amber),
                                                   SizedBox(width: 4),
                                                   Text(
-                                                    "4.6",
+                                                    "${data['rating']}",
                                                     style: TextStyle(
                                                       fontSize: 18,
                                                     ),
@@ -274,7 +279,7 @@ class _DepartDocState extends State<DepartDoc> {
                                                   size: 18, color: Colors.blue),
                                               SizedBox(width: 8),
                                               Text(
-                                                'Mon, 23 Oct 2023',
+                                                formattedDate,
                                                 style: TextStyle(
                                                   fontSize: 14,
                                                 ),
@@ -365,6 +370,7 @@ class _DepartDocState extends State<DepartDoc> {
   }
 
   Widget buildInfoWidget(List<Map<String, dynamic>> doctors) {
+    String formattedDate = DateFormat('EEEE, d MMMM y').format(DateTime.now());
     return ListView.separated(
       padding: EdgeInsets.zero,
       itemBuilder: (context, index) {
@@ -416,7 +422,7 @@ class _DepartDocState extends State<DepartDoc> {
                                   ),
                                 ),
                                 Text(
-                                  data['department'],
+                                  data['speciality'],
                                   style: TextStyle(
                                     fontSize: 14,
                                   ),
@@ -445,7 +451,7 @@ class _DepartDocState extends State<DepartDoc> {
                               size: 18, color: Colors.blue),
                           SizedBox(width: 8),
                           Text(
-                            'Mon, 23 Oct 2023',
+                            formattedDate,
                             style: TextStyle(fontSize: 14),
                           ),
                         ],
@@ -466,7 +472,7 @@ class _DepartDocState extends State<DepartDoc> {
                         alignment: Alignment.centerRight,
                         child: ElevatedButton(
                           onPressed: () async {
-                            String doctorId = data['id'];
+                            String doctorId = data['doctorId'];
                             Map<String, dynamic>? doctorData =
                                 await _firestore.fetchDoctorData(doctorId);
 
