@@ -123,7 +123,7 @@ class _DoctorInfoState extends State<DoctorInfo> {
                   Padding(
                     padding: const EdgeInsets.only(top: 64, left: 28),
                     child: Text(
-                      capitalizeFirst(widget.doctorData['department']),
+                      capitalizeFirst(widget.doctorData['speciality']),
                       style: TextStyle(
                         fontSize: 18,
                       ),
@@ -137,7 +137,7 @@ class _DoctorInfoState extends State<DoctorInfo> {
                         Icon(Icons.star, color: Colors.amber),
                         SizedBox(width: 4),
                         Text(
-                          "4.6",
+                          "${widget.doctorData['rating']}",
                           style: TextStyle(fontSize: 18),
                         ),
                       ],
@@ -188,16 +188,31 @@ class _DoctorInfoState extends State<DoctorInfo> {
                       ),
                       Expanded(
                         child: _buildInfoColumn(
-                            "Rating","${widget.doctorData['rating']}"),
+                            "Rating", "${widget.doctorData['rating']}"),
                       ),
                     ],
                   ),
                 ),
-                _buildSection(
-                  "About Doctor",
-                  "Dr. Libin C Panicker is a highly skilled surgeon with over 3.5 years of experience in performing complex surgical procedures. "
-                      "He is known for his compassionate care and precision in handling critical cases.",
+                _buildSection("About Doctor", "${widget.doctorData['about']}"),
+                Padding(
+                  padding: const EdgeInsets.only(
+                    top: 8,
+                    left: 20,
+                    right: 2,
+                    bottom: 4,
+                  ),
+                  child: Divider(
+                    thickness: 2,
+                    color: Colors.grey,
+                  ),
                 ),
+                _buildSection(
+                  "Achievements",
+                  widget.doctorData['achievements']
+                      .map((achievements) => "• $achievements")
+                      .join("\n"),
+                ),
+
                 Padding(
                   padding: const EdgeInsets.only(
                     top: 8,
@@ -212,7 +227,9 @@ class _DoctorInfoState extends State<DoctorInfo> {
                 ),
                 _buildSection(
                   "Services",
-                  "• Minimally invasive surgery\n• Advanced diagnostics\n• Emergency care",
+                  widget.doctorData['services']
+                      .map((service) => "• $service")
+                      .join("\n"),
                 ),
                 // Padding(
                 //   padding: EdgeInsets.all(8),

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_4/doctor_info.dart';
 import 'package:flutter_application_4/doctors_appointment.dart';
 import 'package:flutter_application_4/services/firestore.dart';
+import 'package:intl/intl.dart';
 
 class DoctorsPage extends StatefulWidget {
   const DoctorsPage({super.key});
@@ -44,6 +45,7 @@ class _DoctorsPageState extends State<DoctorsPage> {
 
   @override
   Widget build(BuildContext context) {
+    String formattedDate = DateFormat('EEEE, d MMMM y').format(DateTime.now());
     return Scaffold(
       appBar: AppBar(
         scrolledUnderElevation: 0,
@@ -66,7 +68,7 @@ class _DoctorsPageState extends State<DoctorsPage> {
                     TextField(
                       onChanged: (value) {
                         setState(() {
-                         searchQuery = value.trim().toLowerCase();
+                          searchQuery = value.trim().toLowerCase();
                         });
                       },
                       focusNode: _focus,
@@ -111,14 +113,15 @@ class _DoctorsPageState extends State<DoctorsPage> {
             child: searchQuery.isEmpty
                 ? Center(child: Text("Type to search..."))
                 : StreamBuilder<List<QueryDocumentSnapshot>>(
-                   
                     stream: _firestore.getList(searchQuery),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return Center(child: CircularProgressIndicator());
                       }
                       if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                        return Center(child: Text("No results found"));
+                        return Center(
+                          child: Text("No results found"),
+                        );
                       }
 
                       var docs = snapshot.data!;
@@ -136,7 +139,7 @@ class _DoctorsPageState extends State<DoctorsPage> {
                             ),
                             child: Container(
                               width: 320,
-                              height: 212,
+                              height: 220,
                               decoration: BoxDecoration(
                                 color: Theme.of(context).cardColor,
                                 borderRadius: BorderRadius.circular(12),
@@ -201,7 +204,7 @@ class _DoctorsPageState extends State<DoctorsPage> {
                                           Positioned(
                                             top: 4,
                                             child: Text(
-                                              data['name'],
+                                              "Dr ${capitalizeFirst(data['name'])}",
                                               style: TextStyle(
                                                 fontSize: 18,
                                                 fontWeight: FontWeight.bold,
@@ -211,14 +214,18 @@ class _DoctorsPageState extends State<DoctorsPage> {
                                           Positioned(
                                             top: 30,
                                             left: 4,
-                                            child: Text(data['department']),
+                                            child: Text(
+                                              capitalizeFirst(
+                                                data['speciality'].trim(),
+                                              ),
+                                            ),
                                           ),
                                         ],
                                       ),
                                     ),
                                   ),
                                   Positioned(
-                                    top: 50,
+                                    top: 80,
                                     left: 260,
                                     child: Row(
                                       children: [
@@ -248,7 +255,7 @@ class _DoctorsPageState extends State<DoctorsPage> {
                                                 size: 18, color: Colors.blue),
                                             SizedBox(width: 8),
                                             Text(
-                                              'Mon, 23 Oct 2023',
+                                              formattedDate,
                                               style: TextStyle(
                                                 fontSize: 14,
                                               ),
@@ -275,46 +282,51 @@ class _DoctorsPageState extends State<DoctorsPage> {
                                     ),
                                   ),
                                   Positioned(
-                                    top: 160,
+                                    top: 170,
                                     right: 25,
-                                    bottom: 16,
-                                    child: ElevatedButton(
-                                      onPressed: () async {
-                                        String doctorId = data['id'];
-                                        Map<String, dynamic>? doctorData =
-                                            await _firestore
-                                                .fetchDoctorData(doctorId);
+                                    bottom: 12,
+                                    child: SizedBox(
+                                      width: 140,
+                                      height: 30,
+                                      child: ElevatedButton(
+                                        onPressed: () async {
+                                          String doctorId = data['doctorId'];
+                                          Map<String, dynamic>? doctorData =
+                                              await _firestore
+                                                  .fetchDoctorData(doctorId);
 
-                                        if (doctorData != null) {
-                                          Navigator.of(context).push(
-                                            MaterialPageRoute(
-                                              builder: (context) => DoctorInfo(
-                                                  doctorData: doctorData),
-                                            ),
-                                          );
-                                        } else {
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            SnackBar(
-                                                content:
-                                                    Text("Doctor not found!")),
-                                          );
-                                        }
-                                      },
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor:
-                                            Color.fromARGB(255, 0, 150, 136),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12),
+                                          if (doctorData != null) {
+                                            Navigator.of(context).push(
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    DoctorInfo(
+                                                        doctorData: doctorData),
+                                              ),
+                                            );
+                                          } else {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                  content: Text(
+                                                      "Doctor not found!")),
+                                            );
+                                          }
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor:
+                                              Color.fromARGB(255, 0, 150, 136),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
                                         ),
-                                      ),
-                                      child: Text(
-                                        "View Details",
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.normal,
+                                        child: Text(
+                                          "View Details",
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.normal,
+                                          ),
                                         ),
                                       ),
                                     ),
