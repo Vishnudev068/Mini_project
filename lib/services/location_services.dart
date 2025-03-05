@@ -1,3 +1,4 @@
+import 'package:flutter_application_4/global.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 
@@ -5,20 +6,25 @@ class LocationService {
   static Future<Map<String, dynamic>> getLatLong() async {
     try {
       Position position = await _determinePosition();
+
+      
+      globalLatitude = position.latitude;
+      globalLongitude = position.longitude;
+
       List<Placemark> placemarks = await placemarkFromCoordinates(
-        position.latitude,
-        position.longitude,
+        globalLatitude!,
+        globalLongitude!,
       );
 
       Placemark place = placemarks.first;
 
       return {
-        "latitude": position.latitude,
-        "longitude": position.longitude,
+        "latitude": globalLatitude,
+        "longitude": globalLongitude,
         "locality":
             place.locality ?? place.subLocality ?? place.street ?? "Unknown",
         "address":
-            "${place.street}, ${place.locality}, ${place.administrativeArea}, ${place.country}",
+            "${place.locality}, ${place.administrativeArea}, ${place.country}",
       };
     } catch (e) {
       throw Exception(e.toString());

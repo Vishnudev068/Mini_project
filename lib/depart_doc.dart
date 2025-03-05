@@ -14,6 +14,11 @@ class DepartDoc extends StatefulWidget {
 }
 
 class _DepartDocState extends State<DepartDoc> {
+  String capitalizeFirst(String text) {
+    if (text.isEmpty) return text;
+    return text[0].toUpperCase() + text.substring(1);
+  }
+
   final FirestoreServices _firestore = FirestoreServices();
   var searchQuery = "";
   final Map<int, ValueNotifier<bool>> _favoriteNotifiers = {};
@@ -180,9 +185,9 @@ class _DepartDocState extends State<DepartDoc> {
                         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                           return Center(child: Text("No doctors found"));
                         }
-                        
+
                         var docs = snapshot.data!.docs;
-                        
+
                         return ListView.separated(
                           padding: EdgeInsets.zero,
                           itemBuilder: (context, index) {
@@ -241,7 +246,7 @@ class _DepartDocState extends State<DepartDoc> {
                                                       CrossAxisAlignment.start,
                                                   children: [
                                                     Text(
-                                                      data['name'],
+                                                      "Dr ${capitalizeFirst(data['name'])}",
                                                       style: TextStyle(
                                                         fontSize: 18,
                                                         fontWeight:
@@ -304,7 +309,33 @@ class _DepartDocState extends State<DepartDoc> {
                                           Align(
                                             alignment: Alignment.centerRight,
                                             child: ElevatedButton(
-                                              onPressed: () {},
+                                              onPressed: () async {
+                                                String doctorId =
+                                                    data['doctorId'];
+                                                Map<String, dynamic>?
+                                                    doctorData =
+                                                    await _firestore
+                                                        .fetchDoctorData(
+                                                            doctorId);
+
+                                                if (doctorData != null) {
+                                                  Navigator.of(context).push(
+                                                    MaterialPageRoute(
+                                                      builder: (context) =>
+                                                          DoctorInfo(
+                                                              doctorData:
+                                                                  doctorData),
+                                                    ),
+                                                  );
+                                                } else {
+                                                  ScaffoldMessenger.of(context)
+                                                      .showSnackBar(
+                                                    SnackBar(
+                                                        content: Text(
+                                                            "Doctor not found!")),
+                                                  );
+                                                }
+                                              },
                                               style: ElevatedButton.styleFrom(
                                                 backgroundColor: Color.fromARGB(
                                                     255, 0, 150, 136),
@@ -415,14 +446,14 @@ class _DepartDocState extends State<DepartDoc> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  data['name'],
+                                  "Dr ${capitalizeFirst(data['name'])}",
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                                 Text(
-                                  data['speciality'],
+                                  capitalizeFirst(data['speciality']),
                                   style: TextStyle(
                                     fontSize: 14,
                                   ),
