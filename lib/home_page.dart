@@ -1366,7 +1366,7 @@ class _HomePageState extends State<HomePage> {
       var locationData = await LocationService.getLatLong();
       setState(() {
         _locationName =
-            locationData["locality"] ?? "Unknown"; // Corrected locality usage
+            locationData["locality"] ?? "Unknown"; 
         _locationDetails = locationData["address"] ?? "Location not found";
       });
     } catch (e) {

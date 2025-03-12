@@ -1,0 +1,2 @@
+double? globalLatitude;
+double? globalLongitude;
