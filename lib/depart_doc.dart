@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_4/doctor_info.dart';
 import 'package:flutter_application_4/services/firestore.dart';
@@ -182,7 +183,9 @@ class _DepartDocState extends State<DepartDoc> {
                             ConnectionState.waiting) {
                           return Center(child: CircularProgressIndicator());
                         }
-                        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                        if (!snapshot.hasData ||
+                            snapshot.data == null ||
+                            snapshot.data!.isEmpty) {
                           return Center(child: Text("No doctors found"));
                         }
 
@@ -569,4 +572,8 @@ class _DepartDocState extends State<DepartDoc> {
       itemCount: doctors.length,
     );
   }
+}
+
+extension on List<QueryDocumentSnapshot<Object?>> {
+  get docs => null;
 }

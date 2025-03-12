@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_application_4/global.dart';
+import 'package:geolocator/geolocator.dart';
 
 class FirestoreServices {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
@@ -8,37 +10,65 @@ class FirestoreServices {
       return Stream.value([]);
     }
 
+    // Ensure user location is available
+    double? userLatitude = globalLatitude;
+    double? userLongitude = globalLongitude;
+
+    if (userLatitude == null || userLongitude == null) {
+      throw Exception(
+          'User location is not available. Please enable location services.');
+    }
+
     var nameQuery = firestore
         .collection('doctors')
         .where('name', isGreaterThanOrEqualTo: prefix)
         .where('name', isLessThan: prefix + '\uf8ff')
         .snapshots();
 
-    var departmentQuery = firestore
-        .collection('doctors')
-        .where('speciality', isGreaterThanOrEqualTo: prefix)
-        .where('speciality', isLessThan: prefix + '\uf8ff')
-        .snapshots();
+    return nameQuery.map((snapshot) {
+      var filteredDocs = snapshot.docs.where((doc) {
+        var data = doc.data() as Map<String, dynamic>?;
 
-    return nameQuery.asyncMap(
-      (nameSnapshot) async {
-        var departmentSnapshot = await departmentQuery.first;
-        var mergedDocs = [...nameSnapshot.docs, ...departmentSnapshot.docs];
-        mergedDocs.sort((a, b) {
-          double ratingA = double.tryParse(
-                  (a.data() as Map<String, dynamic>)['rating']?.toString() ??
-                      '0.0') ??
-              0.0;
-          double ratingB = double.tryParse(
-                  (b.data() as Map<String, dynamic>)['rating']?.toString() ??
-                      '0.0') ??
-              0.0;
-          return ratingB.compareTo(ratingA); // Higher rating first
-        });
+        var location = data?['location'];
+        if (location == null) return false;
 
-        return mergedDocs;
-      },
-    );
+        double? doctorLatitude = location['latitude'];
+        double? doctorLongitude = location['longitude'];
+
+        if (doctorLatitude == null || doctorLongitude == null) return false;
+
+        try {
+          double distanceInKm = Geolocator.distanceBetween(
+                userLatitude,
+                userLongitude,
+                doctorLatitude,
+                doctorLongitude,
+              ) /
+              1000;
+
+          return distanceInKm <= 100.0; // Filter doctors within 100 km
+        } catch (e) {
+          print('Error calculating distance for doctor ${doc.id}: $e');
+          return false;
+        }
+      }).toList();
+
+      // Sort by rating (higher rating first)
+      filteredDocs.sort((a, b) {
+        double ratingA = double.tryParse(
+                (a.data() as Map<String, dynamic>)['rating']?.toString() ??
+                    '0.0') ??
+            0.0;
+        double ratingB = double.tryParse(
+                (b.data() as Map<String, dynamic>)['rating']?.toString() ??
+                    '0.0') ??
+            0.0;
+
+        return ratingB.compareTo(ratingA);
+      });
+
+      return filteredDocs;
+    });
   }
 
   Future<Map<String, dynamic>?> fetchDoctorData(String doctorId) async {
@@ -79,14 +109,53 @@ class FirestoreServices {
     }
   }
 
-  Stream<QuerySnapshot> getDeptDoc(String dept, String prefix) {
+  Stream<List<QueryDocumentSnapshot>> getDeptDoc(String dept, String prefix) {
     dept = dept.trim().toLowerCase();
+
+    // Ensure user location is available
+    double? userLatitude = globalLatitude;
+    double? userLongitude = globalLongitude;
+
+    if (userLatitude == null || userLongitude == null) {
+      throw Exception(
+          'User location is not available. Please enable location services.');
+    }
 
     return firestore
         .collection('doctors')
         .where('speciality', isEqualTo: dept)
         .where('name', isGreaterThanOrEqualTo: prefix)
         .where('name', isLessThanOrEqualTo: '$prefix\uf8ff')
-        .snapshots();
+        .snapshots()
+        .map((snapshot) {
+      var filteredDocs = snapshot.docs.where((doc) {
+        var data = doc.data() as Map<String, dynamic>?;
+
+        var location = data?['location'];
+        if (location == null) return false;
+
+        double? doctorLatitude = location['latitude'];
+        double? doctorLongitude = location['longitude'];
+
+        if (doctorLatitude == null || doctorLongitude == null) return false;
+
+        try {
+          double distanceInKm = Geolocator.distanceBetween(
+                userLatitude,
+                userLongitude,
+                doctorLatitude,
+                doctorLongitude,
+              ) /
+              1000;
+
+          return distanceInKm <= 30.0; // Filter doctors within 100 km
+        } catch (e) {
+          print('Error calculating distance for doctor ${doc.id}: $e');
+          return false;
+        }
+      }).toList();
+
+      return filteredDocs;
+    });
   }
 }
