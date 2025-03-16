@@ -254,6 +254,63 @@ class FirestoreServices {
       return "Error";
     }
   }
+
+  Stream<List<Map<String, dynamic>>> getPharmaciesWithMedicine(
+      String medicineName) {
+    if (medicineName.isEmpty) {
+      print("⚠️ Medicine name is empty. Returning empty list.");
+      return Stream.value([]);
+    }
+
+    print("🔍 Searching for medicine: $medicineName in all pharmacies...");
+
+    return firestore.collection('pharmacy').snapshots().map((snapshot) {
+      var matchedPharmacies = snapshot.docs.where((doc) {
+        var data = doc.data() as Map<String, dynamic>?;
+
+        if (data == null || !data.containsKey('medicines')) {
+          print("⚠️ Skipping pharmacy ${doc.id}, no medicines data.");
+          return false;
+        }
+
+        List<dynamic> medicines = data['medicines'];
+        bool medicineFound = medicines.any((med) {
+          String medName = (med['name'] as String).trim().toLowerCase();
+          String searchName = medicineName.trim().toLowerCase();
+          return medName == searchName || medName.contains(searchName);
+        });
+
+        return medicineFound;
+      }).map((doc) {
+        var data = doc.data();
+
+        List<Map<String, dynamic>> availableMedicines =
+            (data['medicines'] as List<dynamic>)
+                .where((med) => (med['name'] as String)
+                    .trim()
+                    .toLowerCase()
+                    .contains(medicineName.trim().toLowerCase()))
+                .map((med) => {
+                      'name': med['name'],
+                      'price': med['price'],
+                    })
+                .toList();
+
+        return {
+          'id': doc.id,
+          'name': data['name'],
+          'address': data['address'],
+          'phone': data['phone'],
+          'availability': data['availability'],
+          'medicines': availableMedicines,
+        };
+      }).toList();
+
+      print(
+          "✅ Found ${matchedPharmacies.length} pharmacies with medicine: $medicineName");
+      return matchedPharmacies;
+    });
+  }
 }
 
 String generateToken(String doctorId, DateTime date, String userId) {
