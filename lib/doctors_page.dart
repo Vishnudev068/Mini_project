@@ -120,7 +120,7 @@ class _DoctorsPageState extends State<DoctorsPage> {
                       }
                       if (!snapshot.hasData || snapshot.data!.isEmpty) {
                         return Center(
-                          child: Text("No results found"),
+                          child: Text("No results found"), 
                         );
                       }
 

@@ -186,10 +186,12 @@ class _DepartDocState extends State<DepartDoc> {
                         if (!snapshot.hasData ||
                             snapshot.data == null ||
                             snapshot.data!.isEmpty) {
-                          return Center(child: Text("No doctors found"));
+                          return Center(
+                            child: Text("No doctors found"),
+                          );
                         }
 
-                        var docs = snapshot.data!.docs;
+                        var docs = snapshot.data!;
 
                         return ListView.separated(
                           padding: EdgeInsets.zero,

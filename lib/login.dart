@@ -1,6 +1,8 @@
 import 'dart:developer';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_4/auth_service.dart';
+import 'package:flutter_application_4/global.dart';
 import 'package:flutter_application_4/home_page.dart';
 import 'package:flutter_application_4/sign-up.dart';
 
@@ -237,11 +239,21 @@ class _LoginpageState extends State<Loginpage> {
   }
 
   void _login() async {
-    final user =
-        await _auth.loginUserWithEmailAndPassword(_email.text, _password.text);
-    if (user != null) {
-      log("User Logged In");
-      goToHome(context);
+    UserCredential? userCredential = await _auth.loginUserWithEmailAndPassword(
+      _email.text,
+      _password.text,
+    );
+
+    if (userCredential != null && userCredential.user != null) {
+      String uid = userCredential.user!.uid;
+      log("✅ User Logged In with UID: $uid");
+
+      // Store UID globally
+      GlobalState().setUserId(uid);
+
+      goToHome(context); // Navigate to home screen
+    } else {
+      log("❌ Login failed: Invalid credentials");
     }
   }
 }
