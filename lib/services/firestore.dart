@@ -1,6 +1,9 @@
+import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_application_4/global.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:intl/intl.dart';
 
 class FirestoreServices {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
@@ -46,7 +49,7 @@ class FirestoreServices {
               ) /
               1000;
 
-          return distanceInKm <= 100.0; // Filter doctors within 100 km
+          return distanceInKm <= 30.0;
         } catch (e) {
           print('Error calculating distance for doctor ${doc.id}: $e');
           return false;
@@ -55,14 +58,10 @@ class FirestoreServices {
 
       // Sort by rating (higher rating first)
       filteredDocs.sort((a, b) {
-        double ratingA = double.tryParse(
-                (a.data() as Map<String, dynamic>)['rating']?.toString() ??
-                    '0.0') ??
-            0.0;
-        double ratingB = double.tryParse(
-                (b.data() as Map<String, dynamic>)['rating']?.toString() ??
-                    '0.0') ??
-            0.0;
+        double ratingA =
+            double.tryParse((a.data())['rating']?.toString() ?? '0.0') ?? 0.0;
+        double ratingB =
+            double.tryParse((b.data())['rating']?.toString() ?? '0.0') ?? 0.0;
 
         return ratingB.compareTo(ratingA);
       });
@@ -112,7 +111,6 @@ class FirestoreServices {
   Stream<List<QueryDocumentSnapshot>> getDeptDoc(String dept, String prefix) {
     dept = dept.trim().toLowerCase();
 
-    // Ensure user location is available
     double? userLatitude = globalLatitude;
     double? userLongitude = globalLongitude;
 
@@ -127,35 +125,144 @@ class FirestoreServices {
         .where('name', isGreaterThanOrEqualTo: prefix)
         .where('name', isLessThanOrEqualTo: '$prefix\uf8ff')
         .snapshots()
-        .map((snapshot) {
-      var filteredDocs = snapshot.docs.where((doc) {
-        var data = doc.data() as Map<String, dynamic>?;
+        .map(
+      (snapshot) {
+        var filteredDocs = snapshot.docs.where((doc) {
+          var data = doc.data() as Map<String, dynamic>?;
 
-        var location = data?['location'];
-        if (location == null) return false;
+          var location = data?['location'];
+          if (location == null) return false;
 
-        double? doctorLatitude = location['latitude'];
-        double? doctorLongitude = location['longitude'];
+          double? doctorLatitude = location['latitude'];
+          double? doctorLongitude = location['longitude'];
 
-        if (doctorLatitude == null || doctorLongitude == null) return false;
+          if (doctorLatitude == null || doctorLongitude == null) return false;
 
-        try {
-          double distanceInKm = Geolocator.distanceBetween(
-                userLatitude,
-                userLongitude,
-                doctorLatitude,
-                doctorLongitude,
-              ) /
-              1000;
+          try {
+            double distanceInKm = Geolocator.distanceBetween(
+                  userLatitude,
+                  userLongitude,
+                  doctorLatitude,
+                  doctorLongitude,
+                ) /
+                1000;
 
-          return distanceInKm <= 30.0; // Filter doctors within 100 km
-        } catch (e) {
-          print('Error calculating distance for doctor ${doc.id}: $e');
-          return false;
-        }
-      }).toList();
+            return distanceInKm <= 30.0;
+          } catch (e) {
+            print('Error calculating distance for doctor ${doc.id}: $e');
+            return false;
+          }
+        }).toList();
 
-      return filteredDocs;
-    });
+        return filteredDocs;
+      },
+    );
   }
+
+  Future<List<String>> getAvailableSlots(String doctorId, DateTime day) async {
+    String weekday = _getWeekday(day);
+
+    try {
+      QuerySnapshot querySnapshot = await firestore
+          .collection('appointment')
+          .where('doctorId', isEqualTo: doctorId)
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        DocumentSnapshot doc = querySnapshot.docs.first;
+        Map<String, dynamic>? data = doc.data() as Map<String, dynamic>?;
+
+        if (data != null &&
+            data["availability"] != null &&
+            data["availability"].containsKey(weekday)) {
+          List<dynamic> slots =
+              data["availability"][weekday]["timeSlots"] ?? [];
+          return List<String>.from(slots);
+        }
+      }
+    } catch (e) {
+      print("Error fetching slots: $e");
+    }
+
+    return [];
+  }
+
+  String _getWeekday(DateTime date) {
+    List<String> weekdays = [
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+      "sunday"
+    ];
+    return weekdays[date.weekday - 1];
+  }
+
+  Future<List<String>> getDoctorAvailableDays(String doctorId) async {
+    try {
+      QuerySnapshot querySnapshot = await firestore
+          .collection('appointment')
+          .where('doctorId', isEqualTo: doctorId)
+          .limit(1) // Assuming one document per doctor
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        DocumentSnapshot doc = querySnapshot.docs.first;
+        Map<String, dynamic>? data = doc.data() as Map<String, dynamic>?;
+
+        if (data != null && data.containsKey("availability")) {
+          return data["availability"].keys.toList();
+        }
+      }
+    } catch (e) {
+      print("Error fetching available days: $e");
+    }
+    return [];
+  }
+
+  Future<String> bookAppointment(
+      String doctorId, DateTime selectedDate, String selectedSlot) async {
+    try {
+      String? userId = GlobalState().getUserId();
+
+      if (userId == null) {
+        throw Exception("User ID is null. Please log in again.");
+      }
+
+      String token = generateToken(doctorId, selectedDate, userId);
+
+      CollectionReference appointments =
+          FirebaseFirestore.instance.collection('bookings');
+
+      Map<String, dynamic> appointmentData = {
+        "doctorId": doctorId,
+        "userId": userId,
+        "token": token,
+        "date": selectedDate,
+        "slot": selectedSlot,
+        "timestamp": FieldValue.serverTimestamp(),
+      };
+
+      await appointments.add(appointmentData);
+
+      return token;
+    } catch (e) {
+      print("❌ Error booking appointment: $e");
+      return "Error";
+    }
+  }
+}
+
+String generateToken(String doctorId, DateTime date, String userId) {
+  final random = Random();
+  int randomNumber =
+      random.nextInt(9000) + 1000; // Generate a 4-digit random number
+
+  String formattedDate =
+      DateFormat('yyyyMMdd').format(date); // Convert DateTime to "YYYYMMDD"
+
+  return "${doctorId.substring(0, 3).toUpperCase()}-$formattedDate-$randomNumber";
 }

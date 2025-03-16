@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'dart:math';
 
 class TokenGenerate extends StatefulWidget {
-  const TokenGenerate({super.key});
+  String token;
+  TokenGenerate({super.key, required this.token});
 
   @override
   State<TokenGenerate> createState() => _TokenGenerateState();
@@ -15,7 +16,7 @@ class _TokenGenerateState extends State<TokenGenerate> {
   void initState() {
     super.initState();
 
-    _confettiController=ConfettiController(duration: Duration(seconds: 3));
+    _confettiController = ConfettiController(duration: Duration(seconds: 3));
     _confettiController.play();
     _randomnumber = Random().nextInt(50) + 1;
   }
@@ -43,24 +44,24 @@ class _TokenGenerateState extends State<TokenGenerate> {
             ),
           ),
           Positioned(
-            top: 300,
-            left: 100,
-            child: Text('Token generated',style: TextStyle(fontSize: 30),)),
+              top: 300,
+              left: 100,
+              child: Text(
+                'Token generated',
+                style: TextStyle(fontSize: 30),
+              )),
           Center(
             child: Container(
               height: 200,
               width: 200,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.deepPurple,
-              border: Border.all(
-             color: Colors.white
-              )
-            ),
+              decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.deepPurple,
+                  border: Border.all(color: Colors.white)),
               child: Center(
                   child: Text(
-                '$_randomnumber',
-                style: TextStyle(fontSize: 50,color: Colors.white),
+                widget.token,
+                style: TextStyle(fontSize: 50, color: Colors.white),
               )),
             ),
           ),

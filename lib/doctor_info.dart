@@ -1,8 +1,10 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_4/doctors_appointment.dart';
+import 'package:flutter_application_4/map.dart';
 import 'package:flutter_application_4/offline_page.dart';
 import 'package:flutter_application_4/token_generat.dart';
+import 'package:latlong2/latlong.dart';
 
 class DoctorInfo extends StatefulWidget {
   final Map<String, dynamic> doctorData;
@@ -247,10 +249,10 @@ class _DoctorInfoState extends State<DoctorInfo> {
       bottomNavigationBar: BottomAppBar(
         color: Theme.of(context).navigationBarTheme.backgroundColor,
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
+          // mainAxisAlignment: MainAxisAlignment.end,
           children: [
             Padding(
-              padding: EdgeInsets.all(8.0),
+              padding: EdgeInsets.all(8),
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   shape: RoundedRectangleBorder(
@@ -263,7 +265,45 @@ class _DoctorInfoState extends State<DoctorInfo> {
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (BuildContext context) {
-                        return DoctorsAppointment();
+                        return MapScreen(
+                          location: LatLng(
+                            widget.doctorData['location']['latitude'],
+                            widget.doctorData['location']['longitude'],
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
+                child: Text(
+                  "Get location",
+                  style: TextStyle(
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.only(
+                top: 8,
+                bottom: 8,
+                left: 80,
+                right: 20,
+              ),
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  backgroundColor: Colors.blueAccent,
+                ),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (BuildContext context) {
+                        return DoctorsAppointment(
+                            doctorId: widget.doctorData['doctorId']);
                       },
                     ),
                   );
