@@ -28,6 +28,9 @@ class AuthService {
     return null;
   }
 
+  signInWithEmailAndPassword(
+      {required String email, required String password}) {}
+
   // Future<void> signout() async {
   //   try {
   //     await _auth.signOut();

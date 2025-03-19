@@ -1,8 +1,9 @@
 import 'dart:developer';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_application_4/auth_service.dart';
 import 'package:flutter_application_4/global.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_application_4/auth_service.dart';
 import 'package:flutter_application_4/home_page.dart';
 import 'package:flutter_application_4/sign-up.dart';
 
@@ -17,6 +18,24 @@ class _LoginpageState extends State<Loginpage> {
   final _auth = AuthService();
   final TextEditingController _email = TextEditingController();
   final TextEditingController _password = TextEditingController();
+  bool isLoggedIn = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLoginStatus();
+  }
+
+  Future<void> _checkLoginStatus() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool loggedIn = prefs.getBool('isLoggedIn') ?? false;
+    if (loggedIn) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => HomePage()),
+      );
+    }
+  }
 
   @override
   void dispose() {
@@ -34,10 +53,7 @@ class _LoginpageState extends State<Loginpage> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Colors.blue.shade800,
-              Colors.blue.shade400,
-            ],
+            colors: [Colors.blue.shade800, Colors.blue.shade400],
           ),
         ),
         child: LayoutBuilder(
@@ -138,52 +154,27 @@ class _LoginpageState extends State<Loginpage> {
                           ],
                         ),
                         SizedBox(height: 24),
-                        // Google and Facebook Sign-In Buttons
+
+                        // Google and Facebook Buttons
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            ElevatedButton(
+                            _buildSocialButton(
                               onPressed: () {
-                                // Add Google sign-in functionality
+                                // Add Google sign-in logic
                               },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: Colors.black,
-                                minimumSize: Size(120, 50),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                elevation: 5,
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.g_mobiledata, size: 24),
-                                  SizedBox(width: 8),
-                                  Text('Google'),
-                                ],
-                              ),
+                              icon: Icons.g_translate,
+                              text: "Sign in with Google",
+                              color: Colors.grey,
                             ),
                             SizedBox(width: 16),
-                            ElevatedButton(
+                            _buildSocialButton(
                               onPressed: () {
-                                // Add Facebook sign-in functionality
+                                // Add Facebook sign-in logic
                               },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: Colors.black,
-                                minimumSize: Size(120, 50),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                elevation: 5,
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.facebook, size: 24),
-                                  SizedBox(width: 8),
-                                  Text('Facebook'),
-                                ],
-                              ),
+                              icon: Icons.facebook,
+                              text: "Sign in with Facebook",
+                              color: Colors.blue.shade600,
                             ),
                           ],
                         ),
@@ -230,8 +221,33 @@ class _LoginpageState extends State<Loginpage> {
     );
   }
 
+  Widget _buildSocialButton({
+    required VoidCallback onPressed,
+    required IconData icon,
+    required String text,
+    required Color color,
+  }) {
+    return Expanded(
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, color: Colors.white),
+        label: Text(
+          text,
+          style: TextStyle(color: Colors.white),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
+          minimumSize: Size(double.infinity, 48),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+    );
+  }
+
   void goToHome(BuildContext context) {
-    Navigator.of(context).push(
+    Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (context) => HomePage(),
       ),
@@ -239,21 +255,28 @@ class _LoginpageState extends State<Loginpage> {
   }
 
   void _login() async {
-    UserCredential? userCredential = await _auth.loginUserWithEmailAndPassword(
-      _email.text,
-      _password.text,
-    );
+    try {
+      UserCredential? userCredential =
+          await _auth.loginUserWithEmailAndPassword(
+        _email.text,
+        _password.text,
+      );
 
-    if (userCredential != null && userCredential.user != null) {
-      String uid = userCredential.user!.uid;
-      log("✅ User Logged In with UID: $uid");
+      if (userCredential?.user != null) {
+        String? uid = userCredential?.user!.uid; // Get User ID
+        log("User Logged In: $uid");
 
-      // Store UID globally
-      GlobalState().setUserId(uid);
+        GlobalState().setUserId(uid!);
 
-      goToHome(context); // Navigate to home screen
-    } else {
-      log("❌ Login failed: Invalid credentials");
+        // Save login state & UID in SharedPreferences
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isLoggedIn', true);
+        await prefs.setString('userId', uid); // Save UID globally
+
+        goToHome(context);
+      }
+    } catch (e) {
+      log("Login Error: $e");
     }
   }
 }

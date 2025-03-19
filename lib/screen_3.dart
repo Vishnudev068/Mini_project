@@ -56,16 +56,16 @@ class _ScanPageState extends State<ScanPage> {
       return;
     }
 
-    print("Searching for medicine: $medicineName");
+    // print("Searching for medicine: $medicineName");
 
     _firestoreServices
         .getPharmaciesWithMedicine(medicineName)
         .listen((pharmacies) {
-      print("Pharmacies found: ${pharmacies.length}");
-      for (var pharmacy in pharmacies) {
-        print(
-            "Pharmacy: ${pharmacy['name']}, Medicines: ${pharmacy['medicines']}");
-      }
+      // print("Pharmacies found: ${pharmacies.length}");
+      // for (var pharmacy in pharmacies) {
+      //   // print(
+      //   //     "Pharmacy: ${pharmacy['name']}, Medicines: ${pharmacy['medicines']}");
+      // }
       setState(() => _pharmacyList = pharmacies);
     });
   }

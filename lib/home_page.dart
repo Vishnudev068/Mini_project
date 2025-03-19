@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:carousel_slider/carousel_options.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_4/depart_doc.dart';
 import 'package:flutter_application_4/doctors_page.dart';
+import 'package:flutter_application_4/global.dart';
 
 import 'package:flutter_application_4/pharmacy_page.dart';
 import 'package:flutter_application_4/profile_page.dart';
@@ -20,7 +23,13 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
+  Timer? _timer;
+  String capitalizeFirst(String text) {
+    if (text.isEmpty) return text;
+    return text[0].toUpperCase() + text.substring(1);
+  }
+
   String _locationName = "Kottathala";
   String _locationDetails = "Kottarakkara, Kollam, Kerala";
   final FirestoreServices _firestore = FirestoreServices();
@@ -54,9 +63,23 @@ class _HomePageState extends State<HomePage> {
     "Dentistry",
   ];
 
+  String? doctorName;
+  String? specialty;
+  String? selectedDate;
+  String? selectedTimeSlot;
+  String formatDate(DateTime date) {
+    return "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+  }
+
   @override
   void initState() {
     super.initState();
+    _fetchAppointmentAndDoctor();
+
+    _timer = Timer.periodic(Duration(minutes: 2), (Timer t) {
+      _fetchAppointmentAndDoctor();
+    });
+    WidgetsBinding.instance.addObserver(this);
     _focus.addListener(
       () {
         setState(() {
@@ -67,7 +90,15 @@ class _HomePageState extends State<HomePage> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _fetchAppointmentAndDoctor();
+    }
+  }
+
+  @override
   void dispose() {
+    _timer?.cancel();
     _focus.dispose();
     super.dispose();
   }
@@ -84,6 +115,27 @@ class _HomePageState extends State<HomePage> {
         builder: (context) => _pages[index],
       ),
     );
+  }
+
+  Future<void> _fetchAppointmentAndDoctor() async {
+    String? userId = GlobalState().getUserId();
+
+    // Fetch latest appointment
+    var appointment = await _firestore.getLatestAppointment(userId!);
+
+    if (appointment != null) {
+      String doctorId = appointment['doctorId'];
+      selectedDate = appointment['selectedDate'];
+      selectedTimeSlot = appointment['selectedTimeSlot'];
+
+      var doctorDetails = await _firestore.getDoctorDetails(doctorId);
+      if (doctorDetails != null) {
+        setState(() {
+          doctorName = doctorDetails['name'];
+          specialty = doctorDetails['speciality'];
+        });
+      }
+    }
   }
 
   @override
@@ -986,15 +1038,10 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 Padding(
-                  padding: EdgeInsets.only(
-                    top: 16,
-                    left: 20,
-                    right: 20,
-                    bottom: 8,
-                  ),
+                  padding: EdgeInsets.symmetric(vertical: 16, horizontal: 20),
                   child: Container(
                     height: 140,
-                    width: 200,
+                    width: double.infinity,
                     decoration: BoxDecoration(
                       boxShadow:
                           Theme.of(context).brightness == Brightness.light
@@ -1011,6 +1058,39 @@ class _HomePageState extends State<HomePage> {
                           ? Color.fromARGB(255, 30, 40, 80)
                           : Color.fromARGB(255, 235, 240, 230),
                       borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            (doctorName != null && doctorName!.isNotEmpty)
+                                ? "Dr ${capitalizeFirst(doctorName!)}"
+                                : "No Appointment",
+                            style: TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            specialty ?? "",
+                            style: TextStyle(fontSize: 16, color: Colors.grey),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            (selectedDate != null && selectedDate!.isNotEmpty)
+                                ? "Date: ${formatDate(DateTime.parse(selectedDate!))}"
+                                : "No Date",
+                            style: TextStyle(fontSize: 14),
+                          ),
+                          Text(
+                            selectedTimeSlot != null
+                                ? "Time: $selectedTimeSlot"
+                                : "No Time",
+                            style: TextStyle(fontSize: 14),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -1365,8 +1445,7 @@ class _HomePageState extends State<HomePage> {
     try {
       var locationData = await LocationService.getLatLong();
       setState(() {
-        _locationName =
-            locationData["locality"] ?? "Unknown"; 
+        _locationName = locationData["locality"] ?? "Unknown";
         _locationDetails = locationData["address"] ?? "Location not found";
       });
     } catch (e) {

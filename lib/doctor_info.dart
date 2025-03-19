@@ -173,7 +173,8 @@ class _DoctorInfoState extends State<DoctorInfo> {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       Expanded(
-                        child: _buildInfoColumn("Experience", "3.5 yr"),
+                        child: _buildInfoColumn(
+                            "Experience", "${widget.doctorData['experience']}"),
                       ),
                       Container(
                         width: 2,
@@ -181,7 +182,8 @@ class _DoctorInfoState extends State<DoctorInfo> {
                         color: Colors.blue,
                       ),
                       Expanded(
-                        child: _buildInfoColumn("Availability", "Yes"),
+                        child: _buildInfoColumn("Availability",
+                            "${widget.doctorData['availability']}"),
                       ),
                       Container(
                         width: 2,
@@ -296,18 +298,27 @@ class _DoctorInfoState extends State<DoctorInfo> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  backgroundColor: Colors.blueAccent,
+                  backgroundColor: widget.doctorData['availability'] == "No"
+                      ? Colors.grey
+                      : Colors.blueAccent,
                 ),
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (BuildContext context) {
-                        return DoctorsAppointment(
-                            doctorId: widget.doctorData['doctorId']);
+                onPressed: widget.doctorData['availability'] == "No"
+                    ? null
+                    : () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (BuildContext context) {
+                              return DoctorsAppointment(
+                                doctorId: widget.doctorData['doctorId'],
+                                doctorName:
+                                    widget.doctorData['name'] ?? "Unknown",
+                                doctorDept: widget.doctorData['speciality'] ??
+                                    "genaral",
+                              );
+                            },
+                          ),
+                        );
                       },
-                    ),
-                  );
-                },
                 child: Text(
                   'View Details',
                   style: TextStyle(
