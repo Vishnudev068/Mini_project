@@ -1,16 +1,23 @@
 import 'dart:ui';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_application_4/map.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:latlong2/latlong.dart';
 
 class PharmacyInfo extends StatefulWidget {
-  const PharmacyInfo({super.key});
+  final Map<String, dynamic> pharmData;
+  const PharmacyInfo({super.key, required this.pharmData});
 
   @override
   State<PharmacyInfo> createState() => _PharmacyInfoState();
 }
 
 class _PharmacyInfoState extends State<PharmacyInfo> {
+  String capitalizeFirst(String text) {
+    if (text.isEmpty) return text;
+    return text[0].toUpperCase() + text.substring(1);
+  }
+
   bool _isRed = false;
   @override
   Widget build(BuildContext context) {
@@ -108,7 +115,7 @@ class _PharmacyInfoState extends State<PharmacyInfo> {
                 ),
                 child: SizedBox(
                   child: Text(
-                    "Ashvas Pharmacy",
+                    " ${capitalizeFirst(widget.pharmData['name'] ?? 'Unknown')}",
                     style: TextStyle(
                       fontSize: 25,
                       fontWeight: FontWeight.bold,
@@ -226,28 +233,46 @@ class _PharmacyInfoState extends State<PharmacyInfo> {
                         Positioned(
                           top: 60,
                           left: 35,
-                          child: Container(
-                            width: 60,
-                            height: 60,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              color: null,
-                              // boxShadow: [
-                              //   BoxShadow(
-                              //     color: Colors.black.withOpacity(0.0),
-                              //     blurRadius: 2,
-                              //     spreadRadius: 0,
-                              //     offset: Offset(0, 4),
-                              //   ),
-                              // ],
-                            ),
-                            child: FaIcon(
-                              FontAwesomeIcons.locationCrosshairs,
-                              color: Theme.of(context).brightness ==
-                                      Brightness.light
-                                  ? Color.fromARGB(255, 21, 61, 138)
-                                  : Colors.white,
-                              size: 35,
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (BuildContext context) {
+                                    return MapScreen(
+                                      location: LatLng(
+                                        widget.pharmData['location']
+                                            ['latitude'],
+                                        widget.pharmData['location']
+                                            ['longitude'],
+                                      ),
+                                    );
+                                  },
+                                ),
+                              );
+                            },
+                            child: Container(
+                              width: 60,
+                              height: 60,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                color: null,
+                                // boxShadow: [
+                                //   BoxShadow(
+                                //     color: Colors.black.withOpacity(0.0),
+                                //     blurRadius: 2,
+                                //     spreadRadius: 0,
+                                //     offset: Offset(0, 4),
+                                //   ),
+                                // ],
+                              ),
+                              child: FaIcon(
+                                FontAwesomeIcons.locationCrosshairs,
+                                color: Theme.of(context).brightness ==
+                                        Brightness.light
+                                    ? Color.fromARGB(255, 21, 61, 138)
+                                    : Colors.white,
+                                size: 35,
+                              ),
                             ),
                           ),
                         ),

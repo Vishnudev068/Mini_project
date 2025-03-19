@@ -6,14 +6,26 @@ import 'package:table_calendar/table_calendar.dart';
 
 class DoctorsAppointment extends StatefulWidget {
   final dynamic doctorId;
+  final dynamic doctorName;
+  final dynamic doctorDept;
 
-  const DoctorsAppointment({super.key, required this.doctorId});
+  const DoctorsAppointment({
+    super.key,
+    required this.doctorId,
+    required this.doctorName,
+    required this.doctorDept,
+  });
 
   @override
   State<DoctorsAppointment> createState() => _DoctorsAppointmentState();
 }
 
 class _DoctorsAppointmentState extends State<DoctorsAppointment> {
+  String capitalizeFirst(String text) {
+    if (text.isEmpty) return text;
+    return text[0].toUpperCase() + text.substring(1);
+  }
+
   final FirestoreServices _firestore = FirestoreServices();
 
   var _myColorTwo;
@@ -98,10 +110,10 @@ class _DoctorsAppointmentState extends State<DoctorsAppointment> {
                       Positioned(
                         top: 60.0,
                         left: 170,
-                        child: const Text(
-                          'Dr name',
-                          style: TextStyle(
-                            fontSize: 25.0,
+                        child: Text(
+                          "Dr ${capitalizeFirst(widget.doctorName ?? 'Unknown')}",
+                          style: const TextStyle(
+                            fontSize: 20.0,
                           ),
                         ),
                       ),
@@ -109,22 +121,22 @@ class _DoctorsAppointmentState extends State<DoctorsAppointment> {
                         top: 95.00,
                         left: 170,
                         child: Text(
-                          widget.doctorId,
+                          widget.doctorDept,
                           style: TextStyle(
                             fontSize: 17.0,
                           ),
                         ),
                       ),
-                      Positioned(
-                        top: 115.0,
-                        left: 170,
-                        child: const Text(
-                          'Upasana Hospital, Kollam',
-                          style: TextStyle(
-                            fontSize: 15.0,
-                          ),
-                        ),
-                      ),
+                      // Positioned(
+                      //   top: 115.0,
+                      //   left: 170,
+                      //   child: Text(
+                      //     'Upasana Hospital, Kollam',
+                      //     style: TextStyle(
+                      //       fontSize: 15.0,
+                      //     ),
+                      //   ),
+                      // ),
                       Positioned(
                         top: 140,
                         left: 170,

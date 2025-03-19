@@ -234,19 +234,29 @@ class FirestoreServices {
 
       String token = generateToken(doctorId, selectedDate, userId);
 
-      CollectionReference appointments =
-          FirebaseFirestore.instance.collection('bookings');
+      CollectionReference usersRef = firestore.collection('bookings');
+      QuerySnapshot querySnapshot =
+          await usersRef.where("userId", isEqualTo: userId).limit(1).get();
 
-      Map<String, dynamic> appointmentData = {
+      Map<String, dynamic> appointment = {
         "doctorId": doctorId,
-        "userId": userId,
-        "token": token,
-        "date": selectedDate,
-        "slot": selectedSlot,
-        "timestamp": FieldValue.serverTimestamp(),
+        "timestamp": DateTime.now().toIso8601String(),
+        "selectedDate": selectedDate.toIso8601String(),
+        "selectedTimeSlot": selectedSlot,
+        "token": token
       };
 
-      await appointments.add(appointmentData);
+      if (querySnapshot.docs.isNotEmpty) {
+        DocumentReference userDocRef = querySnapshot.docs.first.reference;
+        await userDocRef.update({
+          "appointments": FieldValue.arrayUnion([appointment])
+        });
+      } else {
+        await usersRef.add({
+          "userId": userId,
+          "appointments": [appointment]
+        });
+      }
 
       return token;
     } catch (e) {
@@ -310,6 +320,127 @@ class FirestoreServices {
           "✅ Found ${matchedPharmacies.length} pharmacies with medicine: $medicineName");
       return matchedPharmacies;
     });
+  }
+
+  Future<Map<String, dynamic>?> getLatestAppointment(String userId) async {
+    print("hello");
+    try {
+      QuerySnapshot userSnapshot = await firestore
+          .collection('bookings')
+          .where('userId', isEqualTo: userId)
+          .limit(1)
+          .get();
+
+      if (userSnapshot.docs.isNotEmpty) {
+        var userData = userSnapshot.docs.first.data() as Map<String, dynamic>;
+        List<dynamic> appointments = userData['appointments'] ?? [];
+
+        if (appointments.isNotEmpty) {
+          return appointments.last; // Return latest appointment
+        }
+      }
+    } catch (e) {
+      print("Error fetching appointment: $e");
+    }
+    return null;
+  }
+
+  Future<Map<String, dynamic>?> getDoctorDetails(String doctorId) async {
+    try {
+      QuerySnapshot doctorSnapshot = await firestore
+          .collection('doctors')
+          .where('doctorId', isEqualTo: doctorId) // Match doctorId field
+          .limit(1)
+          .get();
+
+      if (doctorSnapshot.docs.isNotEmpty) {
+        return doctorSnapshot.docs.first.data() as Map<String, dynamic>;
+      }
+    } catch (e) {
+      print("Error fetching doctor details: $e");
+    }
+    return null;
+  }
+
+  Stream<List<QueryDocumentSnapshot>> getPharmacy(String prefix) {
+    if (prefix.isEmpty) {
+      return Stream.value([]);
+    }
+
+    // Ensure user location is available
+    double? userLatitude = globalLatitude;
+    double? userLongitude = globalLongitude;
+
+    if (userLatitude == null || userLongitude == null) {
+      throw Exception(
+          'User location is not available. Please enable location services.');
+    }
+
+    var nameQuery = firestore
+        .collection('pharmacy')
+        .where('name', isGreaterThanOrEqualTo: prefix)
+        .where('name', isLessThan: prefix + '\uf8ff')
+        .snapshots();
+
+    return nameQuery.map((snapshot) {
+      var filteredDocs = snapshot.docs.where((doc) {
+        var data = doc.data() as Map<String, dynamic>?;
+
+        var location = data?['location'];
+        if (location == null) return false;
+
+        double? doctorLatitude = location['latitude'];
+        double? doctorLongitude = location['longitude'];
+
+        if (doctorLatitude == null || doctorLongitude == null) return false;
+
+        try {
+          double distanceInKm = Geolocator.distanceBetween(
+                userLatitude,
+                userLongitude,
+                doctorLatitude,
+                doctorLongitude,
+              ) /
+              1000;
+
+          return distanceInKm <= 30.0;
+        } catch (e) {
+          print('Error calculating distance for doctor ${doc.id}: $e');
+          return false;
+        }
+      }).toList();
+
+      // Sort by rating (higher rating first)
+      filteredDocs.sort((a, b) {
+        double ratingA =
+            double.tryParse((a.data())['rating']?.toString() ?? '0.0') ?? 0.0;
+        double ratingB =
+            double.tryParse((b.data())['rating']?.toString() ?? '0.0') ?? 0.0;
+
+        return ratingB.compareTo(ratingA);
+      });
+
+      return filteredDocs;
+    });
+  }
+
+  Future<Map<String, dynamic>?> fetchPharmacyData(String pharmId) async {
+    try {
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('pharmacy')
+          .where("id", isEqualTo: pharmId)
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        return querySnapshot.docs.first.data() as Map<String, dynamic>;
+      } else {
+        return null;
+      }
+    } catch (e) {
+      print("Error fetching doctor: $e");
+      return null;
+    }
   }
 }
 

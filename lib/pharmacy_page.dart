@@ -1,9 +1,11 @@
 import 'package:animated_text_kit/animated_text_kit.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_4/api/api_services.dart';
 import 'package:flutter_application_4/functions/db_functions.dart';
 import 'package:flutter_application_4/models/models.dart';
 import 'package:flutter_application_4/pharmacy_info.dart';
+import 'package:flutter_application_4/services/firestore.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class PharmacyPage extends StatefulWidget {
@@ -14,7 +16,14 @@ class PharmacyPage extends StatefulWidget {
 }
 
 class _PharmacyPageState extends State<PharmacyPage> {
+  String capitalizeFirst(String text) {
+    if (text.isEmpty) return text;
+    return text[0].toUpperCase() + text.substring(1);
+  }
+
+  String searchQuery = "";
   FocusNode _focus = FocusNode();
+  final FirestoreServices _firestore = FirestoreServices();
   final TextEditingController _controller = TextEditingController();
   bool _isFocus = false;
   final bool isOpen = true;
@@ -61,12 +70,9 @@ class _PharmacyPageState extends State<PharmacyPage> {
                     focusNode: _focus,
                     controller: _controller,
                     onChanged: (value) {
-                      if (value.isEmpty) {
-                        pharmacylist.value = [];
-                        pharmacylist.value.clear();
-                      } else {
-                        getDetails(context, value);
-                      }
+                      setState(() {
+                        searchQuery = value.trim().toLowerCase();
+                      });
                     },
                     decoration: InputDecoration(
                       hintText: null,
@@ -104,165 +110,202 @@ class _PharmacyPageState extends State<PharmacyPage> {
           ),
           SizedBox(height: 40),
           Expanded(
-            child: ValueListenableBuilder<List<Pharmacy>>(
-              valueListenable: pharmacylist,
-              builder: (context, pharmacies, _) {
-                if (_controller.text.isEmpty) {
-                  return buildInfoWidget();
-                }
-                return ListView.separated(
-                  itemBuilder: (context, index) {
-                    final data = pharmacies[index];
-                    return Padding(
-                      padding: const EdgeInsets.all(10),
-                      child: Container(
-                        width: 351,
-                        height: 190,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).brightness == Brightness.dark
-                              ? const Color.fromARGB(255, 30, 40, 80)
-                              : const Color.fromARGB(255, 245, 250, 242),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow:
-                              Theme.of(context).brightness == Brightness.light
-                                  ? [
-                                      BoxShadow(
-                                        color: Colors.grey.withOpacity(0.3),
-                                        blurRadius: 4,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ]
-                                  : [],
-                        ),
-                        child: Stack(
-                          children: [
-                            // Image
-                            Positioned(
-                              top: 18,
-                              left: 20,
-                              child: Container(
-                                width: 100,
-                                height: 100,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(20),
-                                  image: const DecorationImage(
-                                    image:
-                                        AssetImage("asset/images/pharmacy.jpg"),
-                                    fit: BoxFit.fill,
-                                  ),
-                                ),
+            child: searchQuery.isEmpty
+                ? Center(
+                    child: buildInfoWidget(),
+                  )
+                : StreamBuilder<List<QueryDocumentSnapshot>>(
+                    stream: _firestore.getPharmacy(searchQuery),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return Center(child: CircularProgressIndicator());
+                      }
+                      if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                        return Center(
+                          child: Text("No results found"),
+                        );
+                      }
+
+                      var docs = snapshot.data!;
+                      return ListView.separated(
+                        itemBuilder: (context, index) {
+                          var data = docs[index].data() as Map<String, dynamic>;
+
+                          return Padding(
+                            padding: const EdgeInsets.all(10),
+                            child: Container(
+                              width: 351,
+                              height: 190,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? const Color.fromARGB(255, 30, 40, 80)
+                                    : const Color.fromARGB(255, 245, 250, 242),
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: Theme.of(context).brightness ==
+                                        Brightness.light
+                                    ? [
+                                        BoxShadow(
+                                          color: Colors.grey.withOpacity(0.3),
+                                          blurRadius: 4,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ]
+                                    : [],
                               ),
-                            ),
-                            // Pharmacy Details
-                            Positioned(
-                              top: 22,
-                              left: 132,
-                              child: SizedBox(
-                                width: 185,
-                                height: 120,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      data.name,
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
+                              child: Stack(
+                                children: [
+                                  // Image
+                                  Positioned(
+                                    top: 18,
+                                    left: 20,
+                                    child: Container(
+                                      width: 100,
+                                      height: 100,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(20),
+                                        image: const DecorationImage(
+                                          image: AssetImage(
+                                              "asset/images/pharmacy.jpg"),
+                                          fit: BoxFit.fill,
+                                        ),
                                       ),
                                     ),
-                                    const SizedBox(height: 16),
-                                    Row(
+                                  ),
+                                  // Pharmacy Details
+                                  Positioned(
+                                    top: 22,
+                                    left: 132,
+                                    child: SizedBox(
+                                      width: 185,
+                                      height: 120,
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            capitalizeFirst(data['name']),
+                                            style: const TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 16),
+                                          Row(
+                                            children: [
+                                              const FaIcon(
+                                                  FontAwesomeIcons
+                                                      .locationCrosshairs,
+                                                  size: 18),
+                                              const SizedBox(width: 4),
+                                              Flexible(
+                                                child: Text(
+                                                  data['address']
+                                                      .split('\n')[0],
+                                                  overflow: TextOverflow
+                                                      .ellipsis, // Prevents overflow
+                                                  maxLines:
+                                                      1, // Limits to a single line
+                                                  style: const TextStyle(
+                                                      fontSize: 14),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  // Click Here Button
+                                  Positioned(
+                                    top: 130,
+                                    right: 20,
+                                    child: InkWell(
+                                      onTap: () async {
+                                        String pharmId = data['id'];
+                                        Map<String, dynamic>? pharmData =
+                                            await _firestore
+                                                .fetchPharmacyData(pharmId);
+
+                                        if (pharmData != null) {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  PharmacyInfo(
+                                                      pharmData: pharmData),
+                                            ),
+                                          );
+                                        }
+                                      },
+                                      child: Container(
+                                        width: 100,
+                                        height: 30,
+                                        decoration: BoxDecoration(
+                                          color: const Color.fromARGB(
+                                              255, 0, 150, 136),
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: const Text(
+                                          "Click here",
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  // Rating
+                                  const Positioned(
+                                    top: 40,
+                                    right: 40,
+                                    child: Row(
                                       children: [
-                                        FaIcon(
-                                            FontAwesomeIcons.locationCrosshairs,
-                                            size: 18),
+                                        Icon(Icons.star, color: Colors.amber),
                                         SizedBox(width: 4),
-                                        Text(data.location.split('\n')[0]),
+                                        Text(
+                                          "4.6",
+                                          style: TextStyle(fontSize: 18),
+                                        ),
                                       ],
                                     ),
-                                    Text(data.location.split('\n')[1]),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            // Click Here Button
-                            Positioned(
-                              top: 130,
-                              right: 20,
-                              child: InkWell(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) => PharmacyInfo()),
-                                  );
-                                },
-                                child: Container(
-                                  width: 100,
-                                  height: 30,
-                                  decoration: BoxDecoration(
-                                    color:
-                                        const Color.fromARGB(255, 0, 150, 136),
-                                    borderRadius: BorderRadius.circular(10),
                                   ),
-                                  alignment: Alignment.center,
-                                  child: const Text(
-                                    "Click here",
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
+                                  // Availability Indicator
+                                  Positioned(
+                                    top: 130,
+                                    left: 20,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color:
+                                            isOpen ? Colors.green : Colors.red,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        isOpen ? "Open Now" : "Closed",
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            // Rating
-                            const Positioned(
-                              top: 40,
-                              right: 40,
-                              child: Row(
-                                children: [
-                                  Icon(Icons.star, color: Colors.amber),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    "4.6",
-                                    style: TextStyle(fontSize: 18),
                                   ),
                                 ],
                               ),
                             ),
-                            // Availability Indicator
-                            Positioned(
-                              top: 130,
-                              left: 20,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: isOpen ? Colors.green : Colors.red,
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  isOpen ? "Open Now" : "Closed",
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(height: 10),
-                  itemCount: pharmacies.length,
-                );
-              },
-            ),
+                          );
+                        },
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 10),
+                        itemCount: docs.length,
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -287,23 +330,5 @@ class _PharmacyPageState extends State<PharmacyPage> {
         ),
       ),
     );
-  }
-
-  Future<void> getDetails(BuildContext context, String value) async {
-    var data = {"name": value};
-    var _data = await ApiServices.searchStore(data);
-
-    if (_data != null && _data.isNotEmpty) {
-      view_pharmacy(_data);
-    } else {
-      pharmacylist.value.clear();
-      pharmacylist.notifyListeners();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("No data found for the given ID."),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
   }
 }

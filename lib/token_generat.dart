@@ -44,12 +44,13 @@ class _TokenGenerateState extends State<TokenGenerate> {
             ),
           ),
           Positioned(
-              top: 300,
-              left: 100,
-              child: Text(
-                'Token generated',
-                style: TextStyle(fontSize: 30),
-              )),
+            top: 200,
+            left: 80,
+            child: Text(
+              'Token generated',
+              style: TextStyle(fontSize: 30),
+            ),
+          ),
           Center(
             child: Container(
               height: 200,
@@ -59,10 +60,14 @@ class _TokenGenerateState extends State<TokenGenerate> {
                   color: Colors.deepPurple,
                   border: Border.all(color: Colors.white)),
               child: Center(
-                  child: Text(
-                widget.token,
-                style: TextStyle(fontSize: 50, color: Colors.white),
-              )),
+                child: Text(
+                  widget.token,
+                  style: TextStyle(
+                    fontSize: 20,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
             ),
           ),
         ],
