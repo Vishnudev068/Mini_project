@@ -120,7 +120,7 @@ class _DoctorsPageState extends State<DoctorsPage> {
                       }
                       if (!snapshot.hasData || snapshot.data!.isEmpty) {
                         return Center(
-                          child: Text("No results found"), 
+                          child: Text("No results found"),
                         );
                       }
 
@@ -295,12 +295,17 @@ class _DoctorsPageState extends State<DoctorsPage> {
                                               await _firestore
                                                   .fetchDoctorData(doctorId);
 
+                                          String imageUrl =
+                                              "https://klahbkvegzvhcvisagtu.supabase.co/storage/v1/object/public/doctors//$doctorId.png";
+
                                           if (doctorData != null) {
                                             Navigator.of(context).push(
                                               MaterialPageRoute(
                                                 builder: (context) =>
                                                     DoctorInfo(
-                                                        doctorData: doctorData),
+                                                  doctorData: doctorData,
+                                                  imageUrl:imageUrl,
+                                                ),
                                               ),
                                             );
                                           } else {

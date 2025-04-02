@@ -1,9 +1,7 @@
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_application_4/api/api_services.dart';
-import 'package:flutter_application_4/functions/db_functions.dart';
-import 'package:flutter_application_4/models/models.dart';
+
 import 'package:flutter_application_4/pharmacy_info.dart';
 import 'package:flutter_application_4/services/firestore.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';

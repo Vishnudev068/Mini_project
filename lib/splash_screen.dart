@@ -1,13 +1,16 @@
 import 'dart:async';
-import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
+
+import 'package:flutter_application_4/global.dart';
 import 'package:flutter_application_4/home_page.dart';
 import 'package:flutter_application_4/login.dart';
-import 'package:flutter_application_4/main.dart';
+
+import 'package:flutter_application_4/services/firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+// ignore: camel_case_types
 class splashscreen extends StatefulWidget {
   const splashscreen({super.key});
 
@@ -15,16 +18,19 @@ class splashscreen extends StatefulWidget {
   State<splashscreen> createState() => _splashscreenState();
 }
 
+// ignore: camel_case_types
 class _splashscreenState extends State<splashscreen>
     with SingleTickerProviderStateMixin {
+  final FirestoreServices _firestore = FirestoreServices();
   @override
   void initState() {
-    // TODO: implement initState
+  
     super.initState();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
+    _firestore.removePastAppointments();
     Future.delayed(const Duration(seconds: 5), () {
       checkUserLogged();
-    });  
+    });
   }
 
   @override
@@ -59,6 +65,7 @@ class _splashscreenState extends State<splashscreen>
     await Future.delayed(
       Duration(seconds: 3),
       () {
+        // ignore: use_build_context_synchronously
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (ctx) {
@@ -72,16 +79,23 @@ class _splashscreenState extends State<splashscreen>
 
   //shared_preference
   Future<void> checkUserLogged() async {
-    final _sharedPref = await SharedPreferences.getInstance();
-    final _userLog = _sharedPref.getBool(SAVE_KEY);
-    if (_userLog == null || _userLog == false) {
-      gotoLogin();
-    } else {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+    String? storedUserId = prefs.getString('userId');
+
+    if (isLoggedIn && storedUserId != null) {
+      // Restore user ID globally
+      GlobalState().setUserId(storedUserId);
+
+      // Navigate to Home
+      // ignore: use_build_context_synchronously
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (ctx) => HomePage(),
         ),
       );
+    } else {
+      gotoLogin(); // Navigate to login screen if user is not logged in
     }
   }
 }

@@ -442,6 +442,155 @@ class FirestoreServices {
       return null;
     }
   }
+
+  Future<List<Map<String, dynamic>>> fetchAppointments() async {
+    String? userId = GlobalState().getUserId();
+    if (userId == null) return [];
+
+    FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+    // Step 1: Fetch user's booking document
+    QuerySnapshot bookingSnapshot = await firestore
+        .collection('bookings')
+        .where('userId', isEqualTo: userId)
+        .get();
+
+    List<Map<String, dynamic>> allAppointments = [];
+    Set<String> doctorIds = {};
+
+    // Step 2: Iterate over all booking documents
+    for (var doc in bookingSnapshot.docs) {
+      Map<String, dynamic> bookingData = doc.data() as Map<String, dynamic>;
+
+      // Check if the "appointments" field exists and is a list
+      if (bookingData.containsKey('appointments') &&
+          bookingData['appointments'] is List) {
+        List<dynamic> appointmentsList = bookingData['appointments'];
+
+        // Loop through the appointments array
+        for (var appointment in appointmentsList) {
+          if (appointment is Map<String, dynamic> &&
+              appointment.containsKey('doctorId')) {
+            String doctorId = appointment['doctorId'];
+            doctorIds.add(doctorId); // Store unique doctor IDs
+
+            allAppointments.add(appointment);
+          }
+        }
+      }
+    }
+
+    // Step 3: Fetch doctor details
+    Map<String, Map<String, dynamic>> doctorDetailsMap = {};
+
+    if (doctorIds.isNotEmpty) {
+      for (String doctorId in doctorIds) {
+        QuerySnapshot doctorSnapshot = await firestore
+            .collection('doctors')
+            .where("doctorId", isEqualTo: doctorId)
+            .get();
+
+        if (doctorSnapshot.docs.isNotEmpty) {
+          doctorDetailsMap[doctorId] =
+              doctorSnapshot.docs.first.data() as Map<String, dynamic>;
+        }
+      }
+    }
+
+    // Step 4: Merge doctor details with appointments
+    for (var appointment in allAppointments) {
+      String doctorId = appointment['doctorId'];
+      appointment['doctorDetails'] = doctorDetailsMap[doctorId] ?? {};
+    }
+
+    print(
+        "Fetched ${allAppointments.length} appointments with doctor details.");
+    return allAppointments;
+  }
+
+  Future<void> removeAppointment(String doctorId, String selectedDate) async {
+    String? userId = GlobalState().getUserId();
+    if (userId == null) return;
+
+    FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+    QuerySnapshot bookingSnapshot = await firestore
+        .collection('bookings')
+        .where('userId', isEqualTo: userId)
+        .get();
+
+    if (bookingSnapshot.docs.isNotEmpty) {
+      DocumentSnapshot bookingDoc = bookingSnapshot.docs.first;
+      String bookingDocId = bookingDoc.id;
+
+      Map<String, dynamic>? bookingData =
+          bookingDoc.data() as Map<String, dynamic>?;
+
+      if (bookingData != null && bookingData.containsKey('appointments')) {
+        List<dynamic> appointmentsList = bookingData['appointments'];
+
+        appointmentsList.removeWhere(
+          (appointment) =>
+              appointment is Map<String, dynamic> &&
+              appointment['doctorId'] == doctorId &&
+              appointment['selectedDate'] == selectedDate,
+        );
+
+        await firestore.collection('bookings').doc(bookingDocId).update({
+          'appointments': appointmentsList,
+        });
+
+        print(
+            "Appointment with Doctor ID: $doctorId on $selectedDate removed successfully!");
+      } else {
+        print("No appointments found in the document.");
+      }
+    } else {
+      print("No booking document found for this user.");
+    }
+  }
+   
+   //Remove past appointments
+   Future<void> removePastAppointments() async {
+    String? userId = GlobalState().getUserId();
+    if (userId == null) return;
+
+    // Fetch user's booking document
+    QuerySnapshot bookingSnapshot = await firestore
+        .collection('bookings')
+        .where('userId', isEqualTo: userId)
+        .get();
+
+    if (bookingSnapshot.docs.isNotEmpty) {
+      DocumentSnapshot bookingDoc = bookingSnapshot.docs.first;
+      String bookingDocId = bookingDoc.id;
+      Map<String, dynamic>? bookingData =
+          bookingDoc.data() as Map<String, dynamic>?;
+
+      if (bookingData != null && bookingData.containsKey('appointments')) {
+        List<dynamic> appointmentsList = bookingData['appointments'];
+        DateTime today = DateTime.now(); 
+
+        // Remove past appointments
+        appointmentsList.removeWhere((appointment) {
+          if (appointment is Map<String, dynamic> &&
+              appointment.containsKey('selectedDate')) {
+            DateTime appointmentDate =
+                DateTime.parse(appointment['selectedDate']);
+            return appointmentDate.isBefore(today); 
+          }
+          return false;
+        });
+
+        // Update Firestore with the cleaned list
+        await firestore.collection('bookings').doc(bookingDocId).update({
+          'appointments': appointmentsList,
+        });
+
+        print("All past appointments removed successfully!");
+      }
+    }
+  }
 }
 
 String generateToken(String doctorId, DateTime date, String userId) {

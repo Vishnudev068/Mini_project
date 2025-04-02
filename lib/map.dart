@@ -79,7 +79,7 @@ class _MapScreenState extends State<MapScreen> {
     return Scaffold(
       // appBar: AppBar(title: const Text("OSM Route")),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator()) // Loading spinner
+          ? const Center(child: CircularProgressIndicator())
           : FlutterMap(
               mapController: _mapController,
               options: MapOptions(
