@@ -4,9 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_application_4/splash_screen.dart';
-import 'package:flutter_application_4/theme_provider.dart'; // Import the theme provider
+import 'package:flutter_application_4/theme_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'; 
 
 const SAVE_KEY = "user logged";
+const supabaseUrl = 'https://klahbkvegzvhcvisagtu.supabase.co';
+const supabaseKey = String.fromEnvironment('SUPABASE_KEY');
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -19,6 +22,9 @@ void main() async {
     systemNavigationBarIconBrightness: Brightness.light,
     statusBarIconBrightness: Brightness.light,
   ));
+
+ await Supabase.initialize(url: supabaseUrl, anonKey: supabaseKey);
+
 
   Future.delayed(Duration(seconds: 3), () {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);

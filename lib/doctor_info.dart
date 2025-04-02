@@ -8,8 +8,10 @@ import 'package:latlong2/latlong.dart';
 
 class DoctorInfo extends StatefulWidget {
   final Map<String, dynamic> doctorData;
+  final String imageUrl;
 
-  const DoctorInfo({super.key, required this.doctorData});
+  const DoctorInfo(
+      {super.key, required this.doctorData, required this.imageUrl});
 
   @override
   State<DoctorInfo> createState() => _DoctorInfoState();
@@ -44,8 +46,15 @@ class _DoctorInfoState extends State<DoctorInfo> {
                       ),
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.only(top: 10),
-                      child: Image.asset("asset/images/dr.png"),
+                      padding: const EdgeInsets.only(top: 20),
+                      child: widget.imageUrl.isNotEmpty
+                          ? Image.network(
+                              widget.imageUrl,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Image.asset("asset/images/dr.png");
+                              },
+                            )
+                          : Image.asset("asset/images/dr.png"),
                     ),
                   ),
                 ),

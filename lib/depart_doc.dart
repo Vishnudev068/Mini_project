@@ -322,14 +322,16 @@ class _DepartDocState extends State<DepartDoc> {
                                                     await _firestore
                                                         .fetchDoctorData(
                                                             doctorId);
-
+                                                String imageUrl =
+                                                    "https://klahbkvegzvhcvisagtu.supabase.co/storage/v1/object/public/doctors//$doctorId.png";
                                                 if (doctorData != null) {
                                                   Navigator.of(context).push(
                                                     MaterialPageRoute(
                                                       builder: (context) =>
                                                           DoctorInfo(
-                                                              doctorData:
-                                                                  doctorData),
+                                                        doctorData: doctorData,
+                                                        imageUrl: imageUrl,
+                                                      ),
                                                     ),
                                                   );
                                                 } else {
@@ -511,12 +513,15 @@ class _DepartDocState extends State<DepartDoc> {
                             String doctorId = data['doctorId'];
                             Map<String, dynamic>? doctorData =
                                 await _firestore.fetchDoctorData(doctorId);
-
+                            String imageUrl =
+                                "https://klahbkvegzvhcvisagtu.supabase.co/storage/v1/object/public/doctors//$doctorId.png";
                             if (doctorData != null) {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
-                                  builder: (context) =>
-                                      DoctorInfo(doctorData: doctorData),
+                                  builder: (context) => DoctorInfo(
+                                    doctorData: doctorData,
+                                    imageUrl: imageUrl,
+                                  ),
                                 ),
                               );
                             } else {

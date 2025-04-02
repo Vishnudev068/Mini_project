@@ -1,12 +1,15 @@
 import 'dart:async';
 
 import 'package:animated_text_kit/animated_text_kit.dart';
-import 'package:carousel_slider/carousel_options.dart';
+
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_4/appointment.dart';
 import 'package:flutter_application_4/depart_doc.dart';
 import 'package:flutter_application_4/doctors_page.dart';
 import 'package:flutter_application_4/global.dart';
+import 'package:flutter_application_4/helpers/dailog_helper.dart';
+import 'package:flutter_application_4/helpers/location_helper.dart';
 
 import 'package:flutter_application_4/pharmacy_page.dart';
 import 'package:flutter_application_4/profile_page.dart';
@@ -33,6 +36,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   String _locationName = "Kottathala";
   String _locationDetails = "Kottarakkara, Kollam, Kerala";
   final FirestoreServices _firestore = FirestoreServices();
+  final DialogHelper _dialogHelper = DialogHelper();
   int _selectedIndex = 0;
   FocusNode _focus = FocusNode();
   bool _isfocus = false;
@@ -67,6 +71,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   String? specialty;
   String? selectedDate;
   String? selectedTimeSlot;
+
   String formatDate(DateTime date) {
     return "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
   }
@@ -80,6 +85,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       _fetchAppointmentAndDoctor();
     });
     WidgetsBinding.instance.addObserver(this);
+    _requestLocationPermission();
     _focus.addListener(
       () {
         setState(() {
@@ -87,6 +93,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         });
       },
     );
+  }
+
+  void _requestLocationPermission() {
+    LocationHelper.checkLocationPermission(context, () {
+      // setState(() {
+      //   _locationName =
+      //       "Location Enabled"; // Change this based on actual location
+      // });
+    });
   }
 
   @override
@@ -256,7 +271,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                     children: [
                                       InkWell(
                                         onTap: () {
-                                          showDialogContainer(context);
+                                          _dialogHelper.showDialogContainer(context);
                                         },
                                         child: IgnorePointer(
                                           child: TextFormField(
@@ -1039,57 +1054,67 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 ),
                 Padding(
                   padding: EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-                  child: Container(
-                    height: 140,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      boxShadow:
-                          Theme.of(context).brightness == Brightness.light
-                              ? [
-                                  BoxShadow(
-                                    blurRadius: 5,
-                                    spreadRadius: 2,
-                                    offset: Offset(0, 4),
-                                    color: Colors.grey.withOpacity(0.5),
-                                  ),
-                                ]
-                              : [],
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? Color.fromARGB(255, 30, 40, 80)
-                          : Color.fromARGB(255, 235, 240, 230),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Padding(
-                      padding: EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            (doctorName != null && doctorName!.isNotEmpty)
-                                ? "Dr ${capitalizeFirst(doctorName!)}"
-                                : "No Appointment",
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold),
+                  child: GestureDetector(
+                    onTap: () => _fetchAppointmentList(context),
+                    child: Container(
+                      height: 160,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        boxShadow:
+                            Theme.of(context).brightness == Brightness.light
+                                ? [
+                                    BoxShadow(
+                                      blurRadius: 5,
+                                      spreadRadius: 2,
+                                      offset: Offset(0, 4),
+                                      color: Colors.grey.withOpacity(0.5),
+                                    ),
+                                  ]
+                                : [],
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Color.fromARGB(255, 30, 40, 80)
+                            : Color.fromARGB(255, 235, 240, 230),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Padding(
+                        padding: EdgeInsets.all(12),
+                        child: Container(
+                          width: 200,
+                          height: 140,
+                          color: null,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                (doctorName != null && doctorName!.isNotEmpty)
+                                    ? "Dr ${capitalizeFirst(doctorName!)}"
+                                    : "No Appointment",
+                                style: TextStyle(
+                                    fontSize: 18, fontWeight: FontWeight.bold),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                specialty ?? "",
+                                style:
+                                    TextStyle(fontSize: 16, color: Colors.grey),
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                (selectedDate != null &&
+                                        selectedDate!.isNotEmpty)
+                                    ? "Date: ${formatDate(DateTime.parse(selectedDate!))}"
+                                    : "No Date",
+                                style: TextStyle(fontSize: 14),
+                              ),
+                              Text(
+                                selectedTimeSlot != null
+                                    ? "Time: $selectedTimeSlot"
+                                    : "No Time",
+                                style: TextStyle(fontSize: 14),
+                              ),
+                            ],
                           ),
-                          SizedBox(height: 4),
-                          Text(
-                            specialty ?? "",
-                            style: TextStyle(fontSize: 16, color: Colors.grey),
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            (selectedDate != null && selectedDate!.isNotEmpty)
-                                ? "Date: ${formatDate(DateTime.parse(selectedDate!))}"
-                                : "No Date",
-                            style: TextStyle(fontSize: 14),
-                          ),
-                          Text(
-                            selectedTimeSlot != null
-                                ? "Time: $selectedTimeSlot"
-                                : "No Time",
-                            style: TextStyle(fontSize: 14),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
@@ -1366,50 +1391,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     );
   }
 
-  void showDialogContainer(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return Stack(
-          children: [
-            Positioned(
-              top: 20,
-              left: 0,
-              right: 0,
-              child: Material(
-                color: Colors.transparent,
-                child: Container(
-                  width: double.infinity,
-                  height: 100,
-                  color: Colors.blue,
-                  child: Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: TextFormField(
-                          decoration: InputDecoration(
-                            labelText: "Enter your name",
-                            border: OutlineInputBorder(),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return "Please enter your name";
-                            }
-                            return null;
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   void showDept(_dept) async {
     List<Map<String, dynamic>> topDoctors = await _firestore.searchDept(_dept);
 
@@ -1437,6 +1418,21 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           ),
         ),
       ],
+    );
+  }
+
+  Future<void> _fetchAppointmentList(BuildContext context) async {
+    print("Fetching appointments...");
+
+    List<Map<String, dynamic>> appointments =
+        await _firestore.fetchAppointments();
+
+    // Navigate and pass data
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AppointmentScreen(appointments: appointments),
+      ),
     );
   }
 
